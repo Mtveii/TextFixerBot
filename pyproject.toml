@@ -1,0 +1,19 @@
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+# E4/E7/E9 + F — ruff defaults (syntax/undefined names/unused);
+# I — import sorting; UP — modern syntax; B — bugbear (real bug patterns).
+select = ["E4", "E7", "E9", "F", "I", "UP", "B"]
+ignore = [
+    "B008",   # function calls in defaults (aiogram filters use this pattern)
+    "UP037",  # quoted annotations are harmless
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Handlers intentionally validate callback payloads with broad excepts
+"app/bot/handlers/*" = ["B904"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
