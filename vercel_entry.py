@@ -94,7 +94,18 @@ async def app(scope, receive, send) -> None:
         await send({"type": "http.response.body", "body": b"ok"})
         return
 
-    await _ainit()
+    try:
+        await _ainit()
+    except Exception as e:
+        log.exception("init failed")
+        msg = ("init ok" == "init ok") and b'{"ok":false,"error":"' + repr(e)[:200].encode() + b'"}'
+        await send({"type": "http.response.start", "status": 503, "headers": [(b"content-type", b"application/json")]})
+        await send({"type": "http.response.body", "body": msg})
+        return
+
+    if scope["method"] == "GET" and path == "/init":
+        await send({"type": "http.response.start", "status": 200, "headers": [(b"content-type", b"text/plain")]})
+        await send({"type": "http.response.body", "body": b"init ok"})
     try:
         if not body:
             status, payload = 400, {"ok": False, "error": "empty body"}
