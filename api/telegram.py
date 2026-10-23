@@ -99,13 +99,37 @@ async def app(scope, receive, send) -> None:
         if not body:
             status, payload = 400, {"ok": False, "error": "empty body"}
         else:
+            try:
+                data = json.loads(body)
+            except (ValueError, UnicodeDecodeError):
+                log.warning("webhook: bad json (%d bytes)", len(body))
+                await send({"type": "http.response.start", "status": 400, "headers": [(b"content-type", b"application/json")]})
+                await send({"type": "http.response.body", "body": b'{"ok":false,"error":"bad json"}'})
+                return
+            if not isinstance(data, dict) or "update_id" not in data:
+                await send({"type": "http.response.start", "status": 400, "headers": [(b"content-type", b"application/json")]})
+                await send({"type": "http.response.body", "body": b'{"ok":false,"error":"not a telegram update"}'})
+                return
+            # secret webhook-токен (если задан) — защита от посторонних POST
+            expected_secret = _get_settings().webhook_secret or ""
+            if expected_secret:
+                hdrs = {k.lower(): v for k, v in scope.get("headers", [])}
+                if hdrs.get(b"x-telegram-bot-api-secret-token") != expected_secret.encode():
+                    log.warning("webhook: bad secret token")
+                    await send({"type": "http.response.start", "status": 403, "headers": [(b"content-type", b"application/json")]})
+                    await send({"type": "http.response.body", "body": b'{"ok":false,"error":"forbidden"}'})
+                    return
             from aiogram.types import Update
 
-            update = Update.model_validate(json.loads(body), context={"bot": _bot})
-            await _dp.feed_update(_bot, update)
+            update = Update.model_validate(data, context={"bot": _bot})
+            try:
+                await _dp.feed_update(_bot, update)
+            except Exception:
+                # 200 уходит даже при ошибке хендлера — иначе Telegram ретраит апдейт бесконечно
+                log.exception("handler failed for update_id=%s", data.get("update_id"))
             status, payload = 200, {"ok": True}
     except Exception:
-        log.exception("webhook update failed")
+        log.exception("webhook plumbing failed")
         status, payload = 500, {"ok": False, "error": "internal"}
 
     data = json.dumps(payload).encode()
