@@ -29,7 +29,7 @@ target_metadata = Base.metadata
 # live engine URL) > DATABASE_URL/.env settings.
 _url = config.get_main_option("sqlalchemy.url")
 if not _url:
-    _url = get_settings().database_url
+    _url = get_settings().effective_database_url
 config.set_main_option("sqlalchemy.url", _url.replace("%", "%%"))
 
 

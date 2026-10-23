@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     llm_order: str = Field(default="groq,gemini,openai", alias="LLM_ORDER")
 
     database_url: str = Field(default="sqlite+aiosqlite:///./data.db", alias="DATABASE_URL")
+    postgres_url: str = Field(default="", alias="POSTGRES_URL")
     redis_url: str = Field(default="", alias="REDIS_URL")
     webhook_url: str = Field(default="", alias="WEBHOOK_URL")
     webhook_path: str = Field(default="/webhook", alias="WEBHOOK_PATH")
@@ -60,6 +61,14 @@ class Settings(BaseSettings):
             if part.isdigit():
                 out.add(int(part))
         return out
+
+    @property
+    def effective_database_url(self) -> str:
+        if self.database_url.startswith("postgres"):
+            return self.database_url
+        if self.postgres_url:
+            return self.postgres_url
+        return self.database_url
 
     @property
     def llm_configured(self) -> bool:

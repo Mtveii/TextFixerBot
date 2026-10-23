@@ -179,7 +179,7 @@ async def main():
     if not settings.bot_token:
         raise RuntimeError("BOT_TOKEN is empty. Copy .env.example to .env and fill it.")
 
-    init_db(settings.database_url)
+    init_db(settings.effective_database_url)
     await ensure_schema()
 
     import app.bot.state as state
