@@ -1,4 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "builds": [{ "src": "vercel_entry.py", "use": "@vercel/python" }]
+  "builds": [{ "src": "api/telegram.py", "use": "@vercel/python" }],
+  "routes": [{ "src": "/(.*)", "dest": "api/telegram.py" }]
 }
