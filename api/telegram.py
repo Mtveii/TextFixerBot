@@ -94,15 +94,6 @@ async def app(scope, receive, send) -> None:
         await send({"type": "http.response.body", "body": b"ok"})
         return
 
-    try:
-        await _ainit()
-    except Exception as e:
-        log.exception("init failed")
-        msg = ("init ok" == "init ok") and b'{"ok":false,"error":"' + repr(e)[:200].encode() + b'"}'
-        await send({"type": "http.response.start", "status": 503, "headers": [(b"content-type", b"application/json")]})
-        await send({"type": "http.response.body", "body": msg})
-        return
-
     if scope["method"] == "GET" and path == "/envcheck":
         s = _get_settings()
         import os
@@ -121,6 +112,15 @@ async def app(scope, receive, send) -> None:
         }
         await send({"type": "http.response.start", "status": 200, "headers": [(b"content-type", b"application/json")]})
         await send({"type": "http.response.body", "body": json.dumps(diag).encode()})
+        return
+
+    try:
+        await _ainit()
+    except Exception as e:
+        log.exception("init failed")
+        msg = ("init ok" == "init ok") and b'{"ok":false,"error":"' + repr(e)[:200].encode() + b'"}'
+        await send({"type": "http.response.start", "status": 503, "headers": [(b"content-type", b"application/json")]})
+        await send({"type": "http.response.body", "body": msg})
         return
 
     if scope["method"] == "GET" and path == "/init":
