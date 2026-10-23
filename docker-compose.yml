@@ -5,7 +5,8 @@ services:
     depends_on:
       - redis
     volumes:
-      - ./data.db:/app/data.db
+      # директория (не файл): sqlite пишет WAL/-shm рядом с базой — папка решает readonly
+      - ./data:/app/data
     # Для режима WEBHOOK раскомментировать (и задать WEBHOOK_URL в .env):
     # ports:
     #   - "127.0.0.1:8080:8080"
