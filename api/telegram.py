@@ -58,7 +58,7 @@ async def _ainit() -> None:
         from app.main import build_dispatcher
 
         settings = _get_settings()
-        init_db(settings.database_url)
+        init_db(settings.effective_database_url)
         await ensure_schema()
         _bot = Bot(settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
         _dp = build_dispatcher()
@@ -101,6 +101,26 @@ async def app(scope, receive, send) -> None:
         msg = ("init ok" == "init ok") and b'{"ok":false,"error":"' + repr(e)[:200].encode() + b'"}'
         await send({"type": "http.response.start", "status": 503, "headers": [(b"content-type", b"application/json")]})
         await send({"type": "http.response.body", "body": msg})
+        return
+
+    if scope["method"] == "GET" and path == "/envcheck":
+        s = _get_settings()
+        import os
+        env_db = os.environ.get("DATABASE_URL", "")
+        env_pg = os.environ.get("POSTGRES_URL", "")
+
+        def shape(u: str) -> str:
+            if not u:
+                return "unset"
+            scheme = u.split("://", 1)[0]
+            return f"{scheme}://***len={len(u)}"
+        diag = {
+            "env_DATABASE_URL": shape(env_db),
+            "env_POSTGRES_URL": shape(env_pg),
+            "effective": shape(s.database_url if s.database_url.startswith("postgres") else s.effective_database_url),
+        }
+        await send({"type": "http.response.start", "status": 200, "headers": [(b"content-type", b"application/json")]})
+        await send({"type": "http.response.body", "body": json.dumps(diag).encode()})
         return
 
     if scope["method"] == "GET" and path == "/init":
