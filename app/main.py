@@ -41,6 +41,7 @@ async def set_commands(bot: Bot):
     await bot.set_my_commands(
         [
             BotCommand(command="start", description="Начать"),
+            BotCommand(command="about", description="О проекте, GitHub"),
             BotCommand(command="history", description="📚 История"),
             BotCommand(command="favorites", description="⭐ Избранное"),
             BotCommand(command="situations", description="📚 Ситуации"),
@@ -56,6 +57,7 @@ async def set_commands(bot: Bot):
             BotCommand(command="privacy", description="🔒 Приватность"),
             BotCommand(command="to", description="👤 Кому (получатель)"),
             BotCommand(command="help", description="Помощь"),
+            BotCommand(command="broadcast", description="📣 Рассылка (админ)"),
         ]
     )
 

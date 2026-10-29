@@ -4,47 +4,72 @@ from __future__ import annotations
 from aiogram import Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 
 from app.bot.keyboards.main import language_kb
 from app.bot.state import PENDING
+from app.core.config import get_settings
 from app.core.db import get_session_factory
 from app.database import repositories as repo
 
 router = Router()
 
+_SETTINGS = get_settings()
+
+
+def _sibling_kb() -> InlineKeyboardMarkup | None:
+    username = (_SETTINGS.sibling_bot_username or "").strip().lstrip("@")
+    if not username:
+        return None
+    label = _SETTINGS.sibling_bot_label or username
+    return InlineKeyboardMarkup(
+        inline_keyboard=[[InlineKeyboardButton(text=f"🔗 {label}", url=f"https://t.me/{username}")]]
+    )
+
+
 WELCOME = (
-    "✍️ <b>Сделай нормально</b>\n\n"
-    "Напиши мне как есть — хоть с ошибками, сленгом или в двух словах. "
-    "Я превращу это в нормальный текст.\n\n"
-    "Пример:\n"
-    "<i>«привет я сегодня не смогу прийти потому что надо помочь дома»</i>\n\n"
-    "Просто отправь любой текст, голосовое или фото текста — "
-    "а дальше выбери стиль: 🟢 Нормально, 💼 Официально, 🙂 Дружелюбно, ❤️ Мягко, ⚡ Коротко, 🔥 Уверенно.\n\n"
-    "Команды:\n"
-    "/history — 📚 история\n"
-    "/favorites — ⭐ избранное\n"
-    "/situations — 📚 ситуации и шаблоны\n"
-    "/mystyle — 🧬 мой стиль\n"
-    "/language — 🌐 язык результата\n"
-    "/privacy — 🔒 приватность\n"
-    "/help — помощь"
+    "✍️ <b>TextFixerBot</b> — превращает сырой текст в нормальный вариант в нужном стиле.\n\n"
+    "🔧 <b>Технологии:</b>\n"
+    "• LLM: Groq → Gemini → OpenAI (авто-фейловер)\n"
+    "• STT: Groq Whisper (голосовые) + Vision OCR (фото)\n"
+    "• 6 стилей + свой стиль, 3 варианта результата\n\n"
+    "✨ <b>Функции:</b>\n"
+    "• 🟢 Нормально / 💼 Официально / 🙂 Дружелюбно / ❤️ Мягко / ⚡ Коротко / 🔥 Уверенно\n"
+    "• 📋 Копировать, 🔄 Другой вариант, ✂️ Короче, ❤️ Мягче, 💼 Офиц.\n"
+    "• 📚 История, ⭐ Избранное, 🧬 Мой стиль, 🌐 Язык результата\n"
+    "• Голосовые 🎙️ и фото 📸 тоже понимаю\n\n"
+    "🆓 Бесплатно, открыто. Подробнее: /help • /about\n\n"
+    "Просто отправь любой текст — а дальше выбери стиль."
 )
 
 HELP = (
-    "Как пользоваться:\n\n"
+    "ℹ️ Как пользоваться:\n"
     "1. Напиши как попало — я пойму смысл.\n"
     "2. Выбери стиль кнопкой.\n"
     "3. Получи 3 варианта + умные подсказки.\n"
-    "4. Кнопки под результатом: 📋 Скопировать (пришлю чистый текст), "
-    "🔄 Другой вариант, 🎭 Изменить стиль, ✂️ Короче, ❤️ Мягче, 💼 Официальнее, 🔤 Исправить ошибки, ⭐ Сохранить.\n\n"
+    "4. Кнопки под результатом: 📋 Скопировать, 🔄 Другой вариант, 🎭 Стиль, ✂️ Короче, ❤️ Мягче, 💼 Офиц., 🔤 Исправить ошибки, ⭐ Сохранить.\n\n"
     "Фишки:\n"
     "• Ответь на чужое сообщение (reply) — предложу 💬 Ответить.\n"
     "• Перешли сообщение друга + свой черновик — пойму контекст.\n"
     "• «она пишет: …» — режим «Что ответить?».\n"
     "• Голосовые 🎙️ и фото 📸 тоже понимаю.\n"
-    "• Inline: в любом чате набери <code>@бот текст</code>."
-    "• Застрял в режиме «свой стиль» или сценария? <code>/cancel</code> — вернёмся к обычному режиму."
+    "• Inline: в любом чате набери <code>@бот текст</code>.\n"
+    "• Застрял в режиме «свой стиль» или сценария? <code>/cancel</code> — вернёмся к обычному режиму.\n\n"
+    "—\nБесплатно, открыто: /about — GitHub, если захочешь поддержать ☕"
+)
+
+ABOUT = (
+    "🤖 <b>TextFixerBot</b> — превращает сырой текст в нормальный вариант в нужном стиле.\n\n"
+    "🔧 <b>Технологии:</b>\n"
+    "• LLM: Groq → Gemini → OpenAI (авто-фейловер)\n"
+    "• STT: Groq Whisper (голосовые) + Vision OCR (фото)\n"
+    "• 6 стилей + свой стиль, 3 варианта результата\n\n"
+    "✨ <b>Функции:</b>\n"
+    "• 🟢 Нормально / 💼 Официально / 🙂 Дружелюбно / ❤️ Мягко / ⚡ Коротко / 🔥 Уверенно\n"
+    "• 📚 История, ⭐ Избранное, 🧬 Мой стиль, 🌐 Язык результата\n"
+    "• Голосовые 🎙️ и фото 📸 тоже понимаю\n\n"
+    "🆓 Бесплатно, открыто, без слежки.\n"
+    "Если проект полезен — можно поддержать разработку ☕ (полностью добровольно)"
 )
 
 
@@ -56,7 +81,11 @@ async def start(message: Message, state: FSMContext):
     factory = get_session_factory()
     async with factory() as session:
         await repo.get_or_create_user(session, message.from_user.id)
-    await message.answer(WELCOME, parse_mode="HTML")
+    kb = _sibling_kb()
+    if kb:
+        await message.answer(WELCOME, parse_mode="HTML", reply_markup=kb)
+    else:
+        await message.answer(WELCOME, parse_mode="HTML")
 
 
 @router.message(Command("cancel"))
@@ -70,6 +99,15 @@ async def cancel_cmd(message: Message, state: FSMContext):
 @router.message(Command("help"))
 async def help_cmd(message: Message):
     await message.answer(HELP, parse_mode="HTML")
+
+
+@router.message(Command("about"))
+async def about_cmd(message: Message):
+    kb = _sibling_kb()
+    if kb:
+        await message.answer(ABOUT, parse_mode="HTML", reply_markup=kb, disable_web_page_preview=True)
+    else:
+        await message.answer(ABOUT, parse_mode="HTML", disable_web_page_preview=True)
 
 
 @router.message(Command("privacy"))

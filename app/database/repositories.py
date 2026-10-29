@@ -20,6 +20,11 @@ async def get_or_create_user(session: AsyncSession, telegram_id: int, language: 
     return user
 
 
+async def list_user_telegram_ids(session: AsyncSession) -> list[int]:
+    rows = (await session.execute(select(User.telegram_id))).scalars().all()
+    return list(rows)
+
+
 async def get_user_by_tg(session: AsyncSession, telegram_id: int) -> User | None:
     return (await session.execute(select(User).where(User.telegram_id == telegram_id))).scalar_one_or_none()
 

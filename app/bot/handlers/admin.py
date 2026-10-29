@@ -1,5 +1,4 @@
-"""Admin stats (no message contents) + grant premium + telemetry (events)."""
-from __future__ import annotations
+import asyncio
 
 from aiogram import Router
 from aiogram.filters import Command
@@ -10,6 +9,38 @@ from app.core.db import get_session_factory
 from app.database import repositories as repo
 
 router = Router()
+
+
+@router.message(Command("broadcast"))
+async def broadcast(message: Message):
+    settings = get_settings()
+    if message.from_user.id not in settings.admin_id_set:
+        await message.answer("Нет доступа.")
+        return
+    text = ""
+    if message.reply_to_message:
+        text = (message.reply_to_message.text or message.reply_to_message.caption or "").strip()
+    else:
+        parts = (message.text or "").split(maxsplit=1)
+        if len(parts) > 1:
+            text = parts[1].strip()
+    if not text:
+        await message.answer("Использование: <code>/broadcast текст</code> или ответьте на сообщение командой /broadcast.")
+        return
+    factory = get_session_factory()
+    async with factory() as session:
+        ids = await repo.list_user_telegram_ids(session)
+    sent = 0
+    failed = 0
+    bot = message.bot
+    for uid in ids:
+        try:
+            await bot.send_message(uid, text)
+            sent += 1
+        except Exception:
+            failed += 1
+        await asyncio.sleep(0.05)
+    await message.answer(f"📣 Отправлено: {sent}, ошибок: {failed} (всего {len(ids)}).")
 
 
 def _fmt_recent_feedback(events) -> str:
