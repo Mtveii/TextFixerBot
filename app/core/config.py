@@ -52,8 +52,8 @@ class Settings(BaseSettings):
     premium_stars_price: int = Field(default=150, alias="PREMIUM_STARS_PRICE")
     default_language: str = Field(default="ru", alias="DEFAULT_LANGUAGE")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
-    sibling_bot_username: str = Field(default="AudioDecoderBot", alias="SIBLING_BOT_USERNAME")
-    sibling_bot_label: str = Field(default="AudioDecoderBot — голос в текст", alias="SIBLING_BOT_LABEL")
+    sibling_bot_username: str = Field(default="VoiceDestroyerBot", alias="SIBLING_BOT_USERNAME")
+    sibling_bot_label: str = Field(default="VoiceDestroyerBot — голос в текст", alias="SIBLING_BOT_LABEL")
 
     @property
     def admin_id_set(self) -> set[int]:
